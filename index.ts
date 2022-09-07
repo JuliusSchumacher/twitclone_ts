@@ -26,11 +26,7 @@ async function main() {
             createTables: true
         })
 
-
     const urlencodedParser = bodyParser.urlencoded({ extended: false })
-
-    app.set('view engine', 'ejs')
-    app.set('views', path.join(__dirname, 'views'))
 
     // get users
     app.get('/users/', urlencodedParser, async (req, res) => {
@@ -39,24 +35,21 @@ async function main() {
         )
     })
 
-
     // create new user
     app.post('/users/add/:username', urlencodedParser, async (req, res) => {
-        res.send(
-            await db.tables.User.insert({
-                username: req.params.username
-            })
-        )
+        await db.tables.User.insert({
+            username: req.params.username
+        })
+        res.status(201).send()
     })
 
     // follow user
-    app.post('/:user/follow/:follows', urlencodedParser, async (req, res) => {
-        res.send(
-            await db.tables.Follower.insert({
-                user: Number(req.params.user),
-                follows: Number(req.params.follows),
-            })
-        )
+    app.post('/followers/add/:user/:follows', urlencodedParser, async (req, res) => {
+        await db.tables.Follower.insert({
+            user: Number(req.params.user),
+            follows: Number(req.params.follows),
+        })
+        res.status(201).send()
     })
 
     // get all followers
@@ -82,6 +75,9 @@ async function main() {
             username: f.user.username
         }))
         .where(c => c.self.equals({ follows: id }))
+        .orderBy({user: {
+            username: 'DESC'
+        } })
 
         res.send(result)
     })
@@ -115,15 +111,15 @@ async function main() {
 
     // tweet
     app.post('/tweets/:user/new', urlencodedParser, async (req, res) => {
-        res.send(
-            await db.tables.Tweet.insert({
-                user: Number(req.params.user),
-                text: req.body.text,
-                time: new Date()
-            })
-        )
+        await db.tables.Tweet.insert({
+            user: Number(req.params.user),
+            text: req.body.text,
+            time: new Date()
+        })
+        res.status(201).send()
     })
 
+    // get users tweets
     app.get('/tweets/:user', urlencodedParser, async (req, res) => {
         const id = Number(req.params.user)
         const result = await db.tables.Tweet
@@ -134,6 +130,26 @@ async function main() {
         res.send(result)
     })
 
+    // get users timeline(tweets from others that user follows)
+    app.get('/tweets/:user/timeline', urlencodedParser, async (req, res) => {
+        const id = Number(req.params.user)
+        const following = await db.tables.Follower
+            .select(c => c.follows)
+            .where(c => c.equals({user: id}))
+        const tweets = await Promise.all(following
+            .map(async f => await db.tables.Tweet
+                                     .select()
+                                     .where(c => c.equals({user: f.follows}))
+            )
+        )
+
+        const result = tweets
+            .flat()
+            .sort((a, b) => a.time.getTime() - b.time.getTime())
+            .reverse()
+
+        res.send(result)
+    })
 
     app.listen(PORT)
     console.log('Express started on port ' + PORT)
