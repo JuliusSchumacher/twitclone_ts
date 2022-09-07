@@ -9,4 +9,7 @@ export class Tweet {
 
     @Column('NVARCHAR')
     text: string = ""
+
+    @Column('DATETIME')
+    time: Date = new Date()
 }
