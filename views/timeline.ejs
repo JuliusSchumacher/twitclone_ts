@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+  </head>
+  <body>
+    <nav class="navbar container is-max-desktop">
+      <h1 class="title">Timeline</h1>
+    </nav>
+    <table class="table container is-fullwidth is-striped" id="list">
+      <tbody>
+        <% tweets.forEach(tweet => {%>
+          <tr>
+            <td><%= tweet.user %></td>
+            <td><%= tweet.text %></td>
+          </tr>
+        <%}) %>
+      </tbody>
+    </table>
+  </body>
+</html>
